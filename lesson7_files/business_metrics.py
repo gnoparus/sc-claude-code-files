@@ -170,12 +170,48 @@ def calculate_product_category_metrics(sales_df: pd.DataFrame,
     Returns:
         DataFrame with category metrics sorted by revenue
     """
-    # Merge with product categories
-    category_sales = sales_df.merge(
-        products_df[['product_id', 'product_category_name']], 
-        on='product_id', 
-        how='left'
-    )
+    # Check if product_category_name exists in products_df
+    if 'product_category_name' not in products_df.columns:
+        print("Warning: 'product_category_name' not found in products_df")
+        print(f"Available columns: {list(products_df.columns)}")
+        return pd.DataFrame()
+    
+    # Check if product_category_name already exists in sales_df
+    if 'product_category_name' in sales_df.columns:
+        print("Product category already exists in sales data, using existing categories")
+        category_sales = sales_df.copy()
+    else:
+        # Merge with product categories
+        merge_cols = ['product_id', 'product_category_name']
+        available_cols = [col for col in merge_cols if col in products_df.columns]
+        
+        if len(available_cols) < 2:
+            print(f"Warning: Required columns not available. Found: {available_cols}")
+            return pd.DataFrame()
+            
+        category_sales = sales_df.merge(
+            products_df[available_cols], 
+            on='product_id', 
+            how='left'
+        )
+    
+    # Handle duplicate category columns from merge
+    if 'product_category_name_x' in category_sales.columns:
+        category_sales['product_category_name'] = category_sales['product_category_name_x'].fillna(category_sales['product_category_name_y'])
+        category_sales = category_sales.drop(['product_category_name_x', 'product_category_name_y'], axis=1)
+    
+    # Check if merge was successful
+    if 'product_category_name' not in category_sales.columns:
+        print("Error: product_category_name not found after merge")
+        print(f"Columns after merge: {list(category_sales.columns)}")
+        return pd.DataFrame()
+    
+    # Remove rows where category is null
+    category_sales = category_sales.dropna(subset=['product_category_name'])
+    
+    if category_sales.empty:
+        print("Warning: No data available after removing null categories")
+        return pd.DataFrame()
     
     # Calculate category metrics
     category_metrics = category_sales.groupby('product_category_name').agg({
@@ -221,62 +257,98 @@ def calculate_geographic_metrics(sales_df: pd.DataFrame,
     Returns:
         DataFrame with geographic metrics
     """
-    # Merge with customer geography
-    geo_sales = sales_df.copy()
-    
-    # Add customer_id if not present
-    if 'customer_id' not in geo_sales.columns:
-        geo_sales = geo_sales.merge(orders_df[['order_id', 'customer_id']], on='order_id', how='left')
-    
-    # Add geographic information
-    geo_cols = ['customer_id']
-    if geographic_level == 'state':
-        geo_cols.append('customer_state')
+    # Check if geographic data already exists in sales_df
+    if geographic_level == 'state' and 'customer_state' in sales_df.columns:
+        print("Geographic data already exists in sales data, using existing data")
+        geo_sales = sales_df.copy()
         group_col = 'customer_state'
-    elif geographic_level == 'city':
-        geo_cols.extend(['customer_state', 'customer_city'])
-        group_col = ['customer_state', 'customer_city']
-    else:  # zip
-        geo_cols.extend(['customer_state', 'customer_city', 'customer_zip_code_prefix'])
-        group_col = ['customer_state', 'customer_zip_code_prefix']
-    
-    # Filter available columns
-    available_geo_cols = [col for col in geo_cols if col in customers_df.columns]
-    geo_sales = geo_sales.merge(customers_df[available_geo_cols], on='customer_id', how='left')
+    else:
+        # Merge with customer geography
+        geo_sales = sales_df.copy()
+        
+        # Add customer_id if not present
+        if 'customer_id' not in geo_sales.columns:
+            geo_sales = geo_sales.merge(orders_df[['order_id', 'customer_id']], on='order_id', how='left')
+        
+        # Add geographic information
+        geo_cols = ['customer_id']
+        if geographic_level == 'state':
+            geo_cols.append('customer_state')
+            group_col = 'customer_state'
+        elif geographic_level == 'city':
+            geo_cols.extend(['customer_state', 'customer_city'])
+            group_col = ['customer_state', 'customer_city']
+        else:  # zip
+            geo_cols.extend(['customer_state', 'customer_city', 'customer_zip_code_prefix'])
+            group_col = ['customer_state', 'customer_zip_code_prefix']
+        
+        # Filter available columns
+        available_geo_cols = [col for col in geo_cols if col in customers_df.columns]
+        
+        if len(available_geo_cols) < 2:  # Need at least customer_id and one geo column
+            print(f"Warning: Insufficient geographic columns available. Found: {available_geo_cols}")
+            return pd.DataFrame()
+        
+        geo_sales = geo_sales.merge(customers_df[available_geo_cols], on='customer_id', how='left')
     
     # Remove rows where geographic info is missing
-    if geographic_level == 'state' and 'customer_state' in geo_sales.columns:
+    if geographic_level == 'state':
+        if 'customer_state' not in geo_sales.columns:
+            print("Error: customer_state column not found")
+            print(f"Available columns: {list(geo_sales.columns)}")
+            return pd.DataFrame()
+            
         geo_sales = geo_sales.dropna(subset=['customer_state'])
         group_col = 'customer_state'
     
-    # Calculate geographic metrics
-    if group_col in geo_sales.columns or all(col in geo_sales.columns for col in group_col):
-        geo_metrics = geo_sales.groupby(group_col).agg({
-            price_column: ['sum', 'mean'],
-            'order_id': 'nunique',
-            'customer_id': 'nunique'
-        }).round(2)
-        
-        # Flatten columns
-        geo_metrics.columns = ['total_revenue', 'avg_item_price', 'total_orders', 'unique_customers']
-        geo_metrics = geo_metrics.reset_index()
-        
-        # Calculate additional metrics
-        geo_metrics['avg_order_value'] = (geo_metrics['total_revenue'] / geo_metrics['total_orders']).round(2)
-        geo_metrics['revenue_per_customer'] = (geo_metrics['total_revenue'] / geo_metrics['unique_customers']).round(2)
-        geo_metrics['orders_per_customer'] = (geo_metrics['total_orders'] / geo_metrics['unique_customers']).round(2)
-        
-        # Calculate revenue share
-        total_revenue = geo_metrics['total_revenue'].sum()
-        geo_metrics['revenue_share_pct'] = (geo_metrics['total_revenue'] / total_revenue * 100).round(2)
-        
-        # Sort by revenue
-        geo_metrics = geo_metrics.sort_values('total_revenue', ascending=False)
-        
-        return geo_metrics
-    else:
-        print(f"Warning: Required geographic columns not found for {geographic_level} analysis")
+    # Check if we have data after cleaning
+    if geo_sales.empty:
+        print("Warning: No geographic data available after filtering")
         return pd.DataFrame()
+    
+    # Calculate geographic metrics
+    if isinstance(group_col, list):
+        # For multi-level grouping
+        if all(col in geo_sales.columns for col in group_col):
+            geo_metrics = geo_sales.groupby(group_col).agg({
+                price_column: ['sum', 'mean'],
+                'order_id': 'nunique',
+                'customer_id': 'nunique'
+            }).round(2)
+        else:
+            missing_cols = [col for col in group_col if col not in geo_sales.columns]
+            print(f"Warning: Missing columns for grouping: {missing_cols}")
+            return pd.DataFrame()
+    else:
+        # For single-level grouping
+        if group_col in geo_sales.columns:
+            geo_metrics = geo_sales.groupby(group_col).agg({
+                price_column: ['sum', 'mean'],
+                'order_id': 'nunique',
+                'customer_id': 'nunique'
+            }).round(2)
+        else:
+            print(f"Warning: Grouping column '{group_col}' not found in data")
+            print(f"Available columns: {list(geo_sales.columns)}")
+            return pd.DataFrame()
+    
+    # Flatten columns
+    geo_metrics.columns = ['total_revenue', 'avg_item_price', 'total_orders', 'unique_customers']
+    geo_metrics = geo_metrics.reset_index()
+    
+    # Calculate additional metrics
+    geo_metrics['avg_order_value'] = (geo_metrics['total_revenue'] / geo_metrics['total_orders']).round(2)
+    geo_metrics['revenue_per_customer'] = (geo_metrics['total_revenue'] / geo_metrics['unique_customers']).round(2)
+    geo_metrics['orders_per_customer'] = (geo_metrics['total_orders'] / geo_metrics['unique_customers']).round(2)
+    
+    # Calculate revenue share
+    total_revenue = geo_metrics['total_revenue'].sum()
+    geo_metrics['revenue_share_pct'] = (geo_metrics['total_revenue'] / total_revenue * 100).round(2)
+    
+    # Sort by revenue
+    geo_metrics = geo_metrics.sort_values('total_revenue', ascending=False)
+    
+    return geo_metrics
 
 
 def calculate_customer_experience_metrics(sales_df: pd.DataFrame, 

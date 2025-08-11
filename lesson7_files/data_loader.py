@@ -213,6 +213,18 @@ def add_product_categories(sales_df: pd.DataFrame, products_df: pd.DataFrame) ->
     product_cols = ['product_id', 'product_category_name']
     available_cols = [col for col in product_cols if col in products_df.columns]
     
+    if 'product_id' not in available_cols:
+        print("Warning: product_id not found in products_df, cannot merge product categories")
+        return sales_df
+    
+    if 'product_category_name' not in available_cols:
+        print("Warning: product_category_name not found in products_df")
+        print(f"Available columns in products_df: {list(products_df.columns)}")
+        # Return original dataframe with a placeholder category column
+        sales_with_categories = sales_df.copy()
+        sales_with_categories['product_category_name'] = 'Unknown'
+        return sales_with_categories
+    
     return sales_df.merge(products_df[available_cols], on='product_id', how='left')
 
 
