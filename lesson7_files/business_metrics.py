@@ -10,6 +10,7 @@ import numpy as np
 from typing import Dict, List, Optional, Tuple, Union
 from operator import attrgetter
 import warnings
+from simple_logger import logger
 
 
 def calculate_revenue_metrics(sales_df: pd.DataFrame, 
@@ -26,6 +27,16 @@ def calculate_revenue_metrics(sales_df: pd.DataFrame,
     Returns:
         Dictionary containing revenue metrics
     """
+    logger.debug(f"Calculating revenue metrics for {len(sales_df)} records")
+    
+    if sales_df.empty:
+        logger.warning("Empty sales DataFrame provided for revenue metrics")
+        return {}
+    
+    if price_column not in sales_df.columns:
+        logger.error(f"Price column '{price_column}' not found in sales DataFrame")
+        return {}
+    
     metrics = {}
     
     # Total revenue
@@ -56,6 +67,7 @@ def calculate_revenue_metrics(sales_df: pd.DataFrame,
         '95th': sales_df[price_column].quantile(0.95)
     }
     
+    logger.info(f"Revenue metrics calculated - Total: ${metrics['total_revenue']:,.0f}, Orders: {metrics['total_orders']}")
     return metrics
 
 
@@ -186,7 +198,7 @@ def calculate_product_category_metrics(sales_df: pd.DataFrame,
         available_cols = [col for col in merge_cols if col in products_df.columns]
         
         if len(available_cols) < 2:
-            print(f"Warning: Required columns not available. Found: {available_cols}")
+            logger.error(f"Required columns not available. Found: {available_cols}")
             return pd.DataFrame()
             
         category_sales = sales_df.merge(
@@ -202,15 +214,15 @@ def calculate_product_category_metrics(sales_df: pd.DataFrame,
     
     # Check if merge was successful
     if 'product_category_name' not in category_sales.columns:
-        print("Error: product_category_name not found after merge")
-        print(f"Columns after merge: {list(category_sales.columns)}")
+        logger.error("product_category_name not found after merge")
+        logger.debug(f"Columns after merge: {list(category_sales.columns)}")
         return pd.DataFrame()
     
     # Remove rows where category is null
     category_sales = category_sales.dropna(subset=['product_category_name'])
     
     if category_sales.empty:
-        print("Warning: No data available after removing null categories")
+        logger.error("No data available after removing null categories")
         return pd.DataFrame()
     
     # Calculate category metrics

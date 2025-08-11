@@ -16,6 +16,9 @@ from datetime import datetime, timedelta
 import warnings
 warnings.filterwarnings('ignore')
 
+# Import simple logging
+from simple_logger import logger
+
 # Import custom modules
 from data_loader import (
     load_datasets, clean_and_prepare_data, create_sales_dataset,
@@ -29,35 +32,297 @@ from business_metrics import (
     calculate_operational_metrics
 )
 
-# Business color scheme
-COLORS = {
-    'primary': '#1f77b4',      # Professional blue
-    'success': '#2ca02c',      # Growth green  
-    'danger': '#d62728',       # Decline red
-    'warning': '#ff7f0e',      # Alert orange
-    'info': '#17a2b8',         # Information teal
-    'neutral': '#6c757d'       # Neutral gray
+# Theme configurations
+LIGHT_THEME = {
+    'background': 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+    'glass_bg': 'rgba(255, 255, 255, 0.1)',
+    'glass_border': 'rgba(255, 255, 255, 0.2)',
+    'text_primary': '#2c3e50',
+    'text_secondary': '#34495e',
+    'text_muted': '#7f8c8d',
+    'card_shadow': 'rgba(0, 0, 0, 0.1)',
+    'blur': '20px',
+    'primary': '#1f77b4',
+    'success': '#2ca02c',
+    'danger': '#d62728',
+    'warning': '#ff7f0e',
+    'info': '#17a2b8',
+    'neutral': '#6c757d'
 }
+
+DARK_THEME = {
+    'background': 'linear-gradient(135deg, #1e3c72 0%, #2a5298 100%)',
+    'glass_bg': 'rgba(30, 30, 50, 0.2)',
+    'glass_border': 'rgba(255, 255, 255, 0.1)',
+    'text_primary': '#ecf0f1',
+    'text_secondary': '#bdc3c7',
+    'text_muted': '#95a5a6',
+    'card_shadow': 'rgba(0, 0, 0, 0.3)',
+    'blur': '25px',
+    'primary': '#3498db',
+    'success': '#2ecc71',
+    'danger': '#e74c3c',
+    'warning': '#f39c12',
+    'info': '#1abc9c',
+    'neutral': '#95a5a6'
+}
+
+def get_current_theme():
+    """Get current theme based on session state."""
+    return DARK_THEME if st.session_state.get('dark_theme', False) else LIGHT_THEME
+
+def generate_glass_css(theme):
+    """Generate comprehensive liquid glass CSS based on theme."""
+    return f"""
+    <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+    
+    /* Global Styling */
+    .stApp {{
+        background: {theme['background']};
+        font-family: 'Inter', sans-serif;
+    }}
+    
+    /* Hide Streamlit default elements */
+    #MainMenu {{visibility: hidden;}}
+    footer {{visibility: hidden;}}
+    .stDeployButton {{display:none;}}
+    
+    /* Main container glass effect */
+    .main .block-container {{
+        background: {theme['glass_bg']};
+        backdrop-filter: blur({theme['blur']});
+        border: 1px solid {theme['glass_border']};
+        border-radius: 20px;
+        box-shadow: 
+            0 8px 32px {theme['card_shadow']},
+            inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        padding: 2rem;
+        margin-top: 2rem;
+        transition: all 0.3s ease;
+    }}
+    
+    /* Headers */
+    h1, h2, h3 {{
+        color: {theme['text_primary']};
+        font-weight: 600;
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }}
+    
+    h1 {{
+        font-size: 2.5rem;
+        margin-bottom: 1rem;
+        background: linear-gradient(45deg, {theme['primary']}, {theme['info']});
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }}
+    
+    /* Metric cards glass effect */
+    .metric-card, div[data-testid="metric-container"] {{
+        background: {theme['glass_bg']};
+        backdrop-filter: blur(15px);
+        border: 1px solid {theme['glass_border']};
+        border-radius: 16px;
+        padding: 1.5rem;
+        box-shadow: 
+            0 4px 16px {theme['card_shadow']},
+            inset 0 1px 0 rgba(255, 255, 255, 0.1);
+        transition: all 0.3s ease;
+        margin: 0.5rem 0;
+    }}
+    
+    .metric-card:hover, div[data-testid="metric-container"]:hover {{
+        transform: translateY(-2px);
+        box-shadow: 
+            0 8px 25px {theme['card_shadow']},
+            inset 0 1px 0 rgba(255, 255, 255, 0.2);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+    }}
+    
+    /* Selectbox and input styling */
+    .stSelectbox > div > div {{
+        background: {theme['glass_bg']};
+        backdrop-filter: blur(10px);
+        border: 1px solid {theme['glass_border']};
+        border-radius: 12px;
+        color: {theme['text_primary']};
+        transition: all 0.3s ease;
+    }}
+    
+    .stSelectbox > div > div:hover {{
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        box-shadow: 0 4px 12px {theme['card_shadow']};
+    }}
+    
+    /* Button styling */
+    .stButton > button {{
+        background: {theme['glass_bg']};
+        backdrop-filter: blur(15px);
+        border: 1px solid {theme['glass_border']};
+        border-radius: 12px;
+        color: {theme['text_primary']};
+        font-weight: 500;
+        padding: 0.75rem 1.5rem;
+        transition: all 0.3s ease;
+        box-shadow: 0 2px 8px {theme['card_shadow']};
+    }}
+    
+    .stButton > button:hover {{
+        transform: translateY(-1px);
+        box-shadow: 
+            0 6px 20px {theme['card_shadow']},
+            inset 0 1px 0 rgba(255, 255, 255, 0.2);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        background: linear-gradient(45deg, {theme['glass_bg']}, rgba(255, 255, 255, 0.1));
+    }}
+    
+    .stButton > button:active {{
+        transform: translateY(0px);
+        box-shadow: 0 2px 8px {theme['card_shadow']};
+    }}
+    
+    /* Chart containers */
+    .js-plotly-plot, .plotly {{
+        background: {theme['glass_bg']};
+        backdrop-filter: blur(12px);
+        border: 1px solid {theme['glass_border']};
+        border-radius: 16px;
+        padding: 1rem;
+        box-shadow: 
+            0 4px 16px {theme['card_shadow']},
+            inset 0 1px 0 rgba(255, 255, 255, 0.05);
+        transition: all 0.3s ease;
+        margin: 0.5rem 0;
+    }}
+    
+    .js-plotly-plot:hover, .plotly:hover {{
+        transform: translateY(-1px);
+        box-shadow: 
+            0 6px 20px {theme['card_shadow']},
+            inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    }}
+    
+    /* Text styling */
+    p, .stMarkdown {{
+        color: {theme['text_secondary']};
+        line-height: 1.6;
+    }}
+    
+    /* Subheader styling */
+    .stSubheader {{
+        color: {theme['text_primary']};
+        font-weight: 500;
+        margin: 2rem 0 1rem 0;
+        padding-bottom: 0.5rem;
+        border-bottom: 2px solid {theme['glass_border']};
+    }}
+    
+    /* Divider styling */
+    hr {{
+        border: none;
+        height: 2px;
+        background: linear-gradient(90deg, transparent, {theme['glass_border']}, transparent);
+        margin: 2rem 0;
+    }}
+    
+    /* Loading spinner */
+    .stSpinner > div {{
+        border-color: {theme['primary']};
+    }}
+    
+    /* Custom scrollbar */
+    ::-webkit-scrollbar {{
+        width: 8px;
+        height: 8px;
+    }}
+    
+    ::-webkit-scrollbar-track {{
+        background: {theme['glass_bg']};
+        border-radius: 10px;
+    }}
+    
+    ::-webkit-scrollbar-thumb {{
+        background: {theme['glass_border']};
+        border-radius: 10px;
+        transition: background 0.3s ease;
+    }}
+    
+    ::-webkit-scrollbar-thumb:hover {{
+        background: rgba(255, 255, 255, 0.3);
+    }}
+    
+    /* Responsive design */
+    @media (max-width: 768px) {{
+        .main .block-container {{
+            padding: 1rem;
+            margin-top: 1rem;
+            border-radius: 16px;
+        }}
+        
+        h1 {{
+            font-size: 2rem;
+        }}
+        
+        .metric-card, div[data-testid="metric-container"] {{
+            padding: 1rem;
+            border-radius: 12px;
+        }}
+    }}
+    
+    /* Animation keyframes */
+    @keyframes glow {{
+        0% {{
+            box-shadow: 0 4px 16px {theme['card_shadow']};
+        }}
+        50% {{
+            box-shadow: 0 8px 25px {theme['card_shadow']}, 0 0 20px {theme['primary']}40;
+        }}
+        100% {{
+            box-shadow: 0 4px 16px {theme['card_shadow']};
+        }}
+    }}
+    
+    .glow-animation {{
+        animation: glow 2s ease-in-out infinite;
+    }}
+    </style>
+    """
 
 @st.cache_data
 def load_and_process_data():
     """Load and process all e-commerce data with caching."""
+    logger.info("Starting data loading and processing")
+    
     try:
         # Load datasets
+        logger.info("Loading datasets from ecommerce_data directory")
         datasets = load_datasets('ecommerce_data')
         
         # Clean and prepare data
+        logger.info("Cleaning and preparing datasets")
         clean_datasets = clean_and_prepare_data(datasets)
         
         # Create consolidated sales dataset
+        logger.info("Creating consolidated sales dataset")
         sales_df = create_sales_dataset(clean_datasets, order_status_filter='delivered')
+        logger.info(f"Initial sales dataset created with {len(sales_df)} records")
+        
         sales_df = add_product_categories(sales_df, clean_datasets['products'])
+        logger.info("Product categories added to sales data")
+        
         sales_df = add_customer_geography(sales_df, clean_datasets['orders'], clean_datasets['customers'])
+        logger.info("Customer geography added to sales data")
+        
         sales_df = add_review_data(sales_df, clean_datasets['reviews'])
+        logger.info(f"Final sales dataset prepared with {len(sales_df)} records")
         
         return sales_df, clean_datasets
+        
     except Exception as e:
-        st.error(f"Error loading data: {str(e)}")
+        error_msg = f"Error loading data: {str(e)}"
+        logger.error(error_msg)
+        st.error(error_msg)
         return None, None
 
 def create_metric_card(title, value, delta=None, delta_pct=None):
@@ -135,6 +400,7 @@ def create_kpi_row(current_metrics, comparison_metrics, growth_metrics, cx_metri
 
 def create_revenue_trend_chart(monthly_data, comparison_data=None):
     """Create revenue trend line chart."""
+    theme = get_current_theme()
     fig = go.Figure()
     
     # Current period line (solid)
@@ -143,7 +409,7 @@ def create_revenue_trend_chart(monthly_data, comparison_data=None):
         y=monthly_data['total_revenue'],
         mode='lines+markers',
         name='Current Period',
-        line=dict(color=COLORS['primary'], width=3),
+        line=dict(color=theme['primary'], width=3),
         marker=dict(size=8)
     ))
     
@@ -154,7 +420,7 @@ def create_revenue_trend_chart(monthly_data, comparison_data=None):
             y=comparison_data['total_revenue'],
             mode='lines+markers',
             name='Previous Period',
-            line=dict(color=COLORS['neutral'], width=2, dash='dash'),
+            line=dict(color=theme['neutral'], width=2, dash='dash'),
             marker=dict(size=6)
         ))
     
@@ -163,17 +429,21 @@ def create_revenue_trend_chart(monthly_data, comparison_data=None):
         xaxis_title="Month",
         yaxis_title="Revenue",
         yaxis_tickformat="$,.0s",
-        template='plotly_white',
+        template='plotly_dark' if st.session_state.get('dark_theme', False) else 'plotly_white',
         height=400,
         showlegend=True,
-        xaxis=dict(showgrid=True),
-        yaxis=dict(showgrid=True)
+        xaxis=dict(showgrid=True, gridcolor=theme['glass_border']),
+        yaxis=dict(showgrid=True, gridcolor=theme['glass_border']),
+        plot_bgcolor='rgba(0,0,0,0)',
+        paper_bgcolor='rgba(0,0,0,0)',
+        font=dict(color=theme['text_primary'])
     )
     
     return fig
 
 def create_top_categories_chart(category_metrics):
     """Create top categories bar chart."""
+    theme = get_current_theme()
     top_categories = category_metrics.head(10)
     
     fig = go.Figure(data=[
@@ -185,7 +455,7 @@ def create_top_categories_chart(category_metrics):
                 color=top_categories['total_revenue'],
                 colorscale='Blues',
                 showscale=True,
-                colorbar=dict(title="Revenue")
+                colorbar=dict(title=dict(text="Revenue", font=dict(color=theme['text_primary'])))
             ),
             text=[format_currency(x) for x in top_categories['total_revenue']],
             textposition='outside'
@@ -197,15 +467,19 @@ def create_top_categories_chart(category_metrics):
         xaxis_title="Revenue",
         yaxis_title="Category",
         yaxis={'categoryorder': 'total ascending'},
-        template='plotly_white',
+        template='plotly_dark' if st.session_state.get('dark_theme', False) else 'plotly_white',
         height=400,
-        margin=dict(l=150)
+        margin=dict(l=150),
+        plot_bgcolor='rgba(0,0,0,0)',
+        paper_bgcolor='rgba(0,0,0,0)',
+        font=dict(color=theme['text_primary'])
     )
     
     return fig
 
 def create_revenue_map(state_metrics):
     """Create US revenue choropleth map."""
+    theme = get_current_theme()
     fig = px.choropleth(
         state_metrics,
         locations='customer_state',
@@ -223,8 +497,11 @@ def create_revenue_map(state_metrics):
     )
     
     fig.update_layout(
-        template='plotly_white',
-        height=400
+        template='plotly_dark' if st.session_state.get('dark_theme', False) else 'plotly_white',
+        height=400,
+        plot_bgcolor='rgba(0,0,0,0)',
+        paper_bgcolor='rgba(0,0,0,0)',
+        font=dict(color=theme['text_primary'])
     )
     
     return fig
@@ -261,19 +538,24 @@ def create_satisfaction_delivery_scatter(sales_df):
         hovertemplate='<b>%{x}</b><br>%{text}<extra></extra>'
     ))
     
+    theme = get_current_theme()
     fig.update_layout(
         title="Customer Satisfaction vs Delivery Time",
         xaxis_title="Delivery Time",
         yaxis_title="Average Review Score",
-        template='plotly_white',
+        template='plotly_dark' if st.session_state.get('dark_theme', False) else 'plotly_white',
         height=400,
-        yaxis=dict(range=[1, 5])
+        yaxis=dict(range=[1, 5]),
+        plot_bgcolor='rgba(0,0,0,0)',
+        paper_bgcolor='rgba(0,0,0,0)',
+        font=dict(color=theme['text_primary'])
     )
     
     return fig
 
 def create_seasonal_pattern_chart(current_data, previous_data=None):
     """Create seasonal revenue pattern chart."""
+    theme = get_current_theme()
     fig = go.Figure()
     
     # Current year
@@ -282,7 +564,7 @@ def create_seasonal_pattern_chart(current_data, previous_data=None):
         y=current_data['total_revenue'],
         mode='lines+markers',
         name='Current Year',
-        line=dict(color=COLORS['primary'], width=3),
+        line=dict(color=theme['primary'], width=3),
         marker=dict(size=8)
     ))
     
@@ -293,7 +575,7 @@ def create_seasonal_pattern_chart(current_data, previous_data=None):
             y=previous_data['total_revenue'],
             mode='lines+markers',
             name='Previous Year',
-            line=dict(color=COLORS['neutral'], width=2, dash='dash'),
+            line=dict(color=theme['neutral'], width=2, dash='dash'),
             marker=dict(size=6)
         ))
     
@@ -303,11 +585,11 @@ def create_seasonal_pattern_chart(current_data, previous_data=None):
     
     fig.add_annotation(
         x=peak_month, y=current_data.loc[current_data['month']==peak_month, 'total_revenue'].iloc[0],
-        text="Peak", showarrow=True, arrowcolor=COLORS['success']
+        text="Peak", showarrow=True, arrowcolor=theme['success']
     )
     fig.add_annotation(
         x=low_month, y=current_data.loc[current_data['month']==low_month, 'total_revenue'].iloc[0],
-        text="Low", showarrow=True, arrowcolor=COLORS['danger']
+        text="Low", showarrow=True, arrowcolor=theme['danger']
     )
     
     fig.update_layout(
@@ -315,9 +597,12 @@ def create_seasonal_pattern_chart(current_data, previous_data=None):
         xaxis_title="Month",
         yaxis_title="Revenue",
         yaxis_tickformat="$,.0s",
-        template='plotly_white',
+        template='plotly_dark' if st.session_state.get('dark_theme', False) else 'plotly_white',
         height=400,
-        showlegend=True
+        showlegend=True,
+        plot_bgcolor='rgba(0,0,0,0)',
+        paper_bgcolor='rgba(0,0,0,0)',
+        font=dict(color=theme['text_primary'])
     )
     
     return fig
@@ -357,9 +642,13 @@ def create_customer_segmentation_chart(sales_df):
         }
     )
     
+    theme = get_current_theme()
     fig.update_layout(
-        template='plotly_white',
-        height=400
+        template='plotly_dark' if st.session_state.get('dark_theme', False) else 'plotly_white',
+        height=400,
+        plot_bgcolor='rgba(0,0,0,0)',
+        paper_bgcolor='rgba(0,0,0,0)',
+        font=dict(color=theme['text_primary'])
     )
     
     return fig
@@ -403,6 +692,8 @@ def create_bottom_cards(cx_metrics, state_metrics):
             """, unsafe_allow_html=True)
 
 def main():
+    logger.info("Starting E-commerce Analytics Dashboard")
+    
     st.set_page_config(
         page_title="E-commerce Analytics Dashboard",
         page_icon="📊",
@@ -410,65 +701,120 @@ def main():
         initial_sidebar_state="collapsed"
     )
     
-    # Custom CSS for better styling
-    st.markdown("""
-    <style>
-    .metric-card {
-        background-color: white;
-        padding: 1rem;
-        border-radius: 0.5rem;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    }
+    logger.debug("Streamlit page configuration set")
     
-    .main > div {
-        padding-top: 2rem;
-    }
+    # Apply liquid glass theme
+    theme = get_current_theme()
+    st.markdown(generate_glass_css(theme), unsafe_allow_html=True)
     
-    h1 {
-        color: #1f77b4;
-        text-align: center;
-        margin-bottom: 2rem;
-    }
-    
-    .stSelectbox > div > div {
-        background-color: white;
-    }
-    </style>
-    """, unsafe_allow_html=True)
-    
-    # Header
-    col1, col2 = st.columns([3, 1])
+    # Header with enhanced filters
+    col1, col2, col3, col4 = st.columns([2, 1, 1, 1])
     with col1:
         st.title("E-commerce Analytics Dashboard")
     
     with col2:
-        # Date range filter
+        # Theme toggle
+        if 'dark_theme' not in st.session_state:
+            st.session_state.dark_theme = False
+        
+        theme_label = "🌙" if st.session_state.dark_theme else "☀️"
+        if st.button(f"{theme_label} Theme", key="theme_toggle"):
+            old_theme = st.session_state.dark_theme
+            st.session_state.dark_theme = not st.session_state.dark_theme
+            new_theme = "dark" if st.session_state.dark_theme else "light"
+            logger.info(f"User switched to {new_theme} theme")
+            st.rerun()
+    
+    with col3:
+        # Year filter (default to 2023)
         years_available = [2022, 2023]
-        selected_year = st.selectbox("Select Year", years_available, index=1)
+        selected_year = st.selectbox("Year", years_available, index=1)
+        if 'previous_year' not in st.session_state:
+            st.session_state.previous_year = selected_year
+        elif st.session_state.previous_year != selected_year:
+            st.session_state.previous_year = selected_year
+    
+    with col4:
+        # Month filter
+        months = {
+            "All": None,
+            "Jan": 1, "Feb": 2, "Mar": 3, "Apr": 4,
+            "May": 5, "Jun": 6, "Jul": 7, "Aug": 8,
+            "Sep": 9, "Oct": 10, "Nov": 11, "Dec": 12
+        }
+        selected_month_name = st.selectbox("Month", list(months.keys()), index=0)
+        selected_month = months[selected_month_name]
+        if 'previous_month' not in st.session_state:
+            st.session_state.previous_month = selected_month_name
+        elif st.session_state.previous_month != selected_month_name:
+            st.session_state.previous_month = selected_month_name
     
     # Load data
+    logger.info("Starting data loading process")
     with st.spinner("Loading data..."):
         sales_df, clean_datasets = load_and_process_data()
     
     if sales_df is None:
-        st.error("Failed to load data. Please check the data files.")
+        error_msg = "Failed to load data. Please check the data files."
+        logger.error(error_msg)
+        st.error(error_msg)
         return
     
-    # Filter data based on selected year
-    current_period_df = filter_data_by_date_range(
-        sales_df, start_year=selected_year, end_year=selected_year
-    )
-    comparison_period_df = filter_data_by_date_range(
-        sales_df, start_year=selected_year-1, end_year=selected_year-1
-    )
+    logger.info(f"Data loaded successfully - {len(sales_df)} records available")
+    
+    # Filter data based on selected year and month
+    logger.info(f"Filtering data for year: {selected_year}, month: {selected_month_name}")
+    
+    if selected_month:
+        logger.debug(f"Filtering for specific month: {selected_month}")
+        current_period_df = filter_data_by_date_range(
+            sales_df, start_year=selected_year, end_year=selected_year,
+            start_month=selected_month, end_month=selected_month
+        )
+        comparison_period_df = filter_data_by_date_range(
+            sales_df, start_year=selected_year-1, end_year=selected_year-1,
+            start_month=selected_month, end_month=selected_month
+        )
+    else:
+        logger.debug(f"Filtering for full year: {selected_year}")
+        current_period_df = filter_data_by_date_range(
+            sales_df, start_year=selected_year, end_year=selected_year
+        )
+        comparison_period_df = filter_data_by_date_range(
+            sales_df, start_year=selected_year-1, end_year=selected_year-1
+        )
+    
+    logger.info(f"Current period: {len(current_period_df)} records, Comparison period: {len(comparison_period_df)} records")
     
     # Calculate metrics
-    current_metrics = calculate_revenue_metrics(current_period_df)
-    comparison_metrics = calculate_revenue_metrics(comparison_period_df) if not comparison_period_df.empty else {}
-    growth_metrics = calculate_growth_metrics(current_period_df, comparison_period_df) if not comparison_period_df.empty else {}
-    cx_metrics = calculate_customer_experience_metrics(current_period_df, clean_datasets['reviews'])
-    category_metrics = calculate_product_category_metrics(current_period_df, clean_datasets['products'])
-    state_metrics = calculate_geographic_metrics(current_period_df, clean_datasets['orders'], clean_datasets['customers'])
+    logger.info("Starting metrics calculation")
+    
+    try:
+        logger.debug("Calculating revenue metrics")
+        current_metrics = calculate_revenue_metrics(current_period_df)
+        
+        comparison_metrics = calculate_revenue_metrics(comparison_period_df) if not comparison_period_df.empty else {}
+        growth_metrics = calculate_growth_metrics(current_period_df, comparison_period_df) if not comparison_period_df.empty else {}
+        
+        logger.debug("Calculating customer experience metrics")
+        cx_metrics = calculate_customer_experience_metrics(current_period_df, clean_datasets['reviews'])
+        
+        logger.debug("Calculating product category metrics")
+        category_metrics = calculate_product_category_metrics(current_period_df, clean_datasets['products'])
+        
+        logger.debug("Calculating geographic metrics")
+        state_metrics = calculate_geographic_metrics(current_period_df, clean_datasets['orders'], clean_datasets['customers'])
+        
+        logger.info("All metrics calculated successfully")
+        
+        # Log key metrics for monitoring
+        if current_metrics:
+            logger.debug(f"Revenue: ${current_metrics.get('total_revenue', 0):,.0f}, Orders: {current_metrics.get('total_orders', 0)}")
+            
+    except Exception as e:
+        logger.error(f"Error calculating metrics: {str(e)}")
+        st.error(f"Error calculating metrics: {str(e)}")
+        return
     
     # Calculate monthly trends
     monthly_current = calculate_monthly_trends(current_period_df, year_filter=selected_year)
@@ -487,35 +833,45 @@ def main():
     col1, col2, col3 = st.columns(3)
     
     with col1:
+        logger.debug("Rendering revenue trend chart")
         fig = create_revenue_trend_chart(monthly_current, monthly_comparison)
         st.plotly_chart(fig, use_container_width=True)
     
     with col2:
         if not category_metrics.empty:
+            logger.debug("Rendering top categories chart")
             fig = create_top_categories_chart(category_metrics)
             st.plotly_chart(fig, use_container_width=True)
         else:
-            st.warning("Category data not available")
+            warning_msg = "Category data not available"
+            logger.warning(warning_msg)
+            st.warning(warning_msg)
     
     with col3:
         if not state_metrics.empty:
+            logger.debug("Rendering revenue map")
             fig = create_revenue_map(state_metrics)
             st.plotly_chart(fig, use_container_width=True)
         else:
-            st.warning("Geographic data not available")
+            warning_msg = "Geographic data not available"
+            logger.warning(warning_msg)
+            st.warning(warning_msg)
     
     # Row 2  
     col1, col2, col3 = st.columns(3)
     
     with col1:
+        logger.debug("Rendering satisfaction vs delivery scatter plot")
         fig = create_satisfaction_delivery_scatter(current_period_df.copy())
         st.plotly_chart(fig, use_container_width=True)
     
     with col2:
+        logger.debug("Rendering seasonal pattern chart")
         fig = create_seasonal_pattern_chart(monthly_current, monthly_comparison)
         st.plotly_chart(fig, use_container_width=True)
     
     with col3:
+        logger.debug("Rendering customer segmentation chart")
         fig = create_customer_segmentation_chart(current_period_df.copy())
         st.plotly_chart(fig, use_container_width=True)
     
@@ -526,4 +882,13 @@ def main():
     create_bottom_cards(cx_metrics, state_metrics)
 
 if __name__ == "__main__":
-    main()
+    try:
+        logger.info("=" * 50)
+        logger.info("E-commerce Analytics Dashboard Starting")
+        logger.info("=" * 50)
+        main()
+        logger.info("Dashboard session completed successfully")
+    except Exception as e:
+        logger.error(f"Fatal error in dashboard: {str(e)}")
+        st.error(f"A critical error occurred: {str(e)}")
+        raise

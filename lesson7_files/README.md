@@ -6,13 +6,15 @@ This professional Streamlit dashboard provides comprehensive e-commerce analytic
 
 ## Key Features
 
-- **Interactive Streamlit Dashboard**: Professional web interface with real-time updates
-- **KPI Dashboard**: 5-card KPI row with trend indicators and growth metrics
-- **Dynamic Filtering**: Year selection with automatic data filtering
-- **6-Chart Analytics Grid**: Revenue trends, category performance, geographic insights
-- **Professional Styling**: Consistent color coding and business-oriented design
-- **Responsive Layout**: Optimized for desktop and mobile viewing
-- **Real-time Calculations**: Automatic metric updates based on selected filters
+- **🌟 Liquid Glass Theme**: Modern glassmorphism design with stunning visual effects
+- **🌙 Day/Night Mode**: Toggle between light and dark themes with smooth transitions
+- **📱 Interactive Dashboard**: Professional web interface with real-time updates
+- **📊 KPI Dashboard**: 5-card KPI row with trend indicators and growth metrics
+- **📅 Advanced Filtering**: Year and month selection with automatic data filtering (defaults to 2023)
+- **📈 6-Chart Analytics Grid**: Revenue trends, category performance, geographic insights
+- **🎨 Professional Styling**: Glassmorphism effects with backdrop blur and transparency
+- **📱 Responsive Design**: Optimized for desktop, tablet, and mobile viewing
+- **⚡ Real-time Calculations**: Automatic metric updates based on selected filters
 
 ## Project Structure
 
@@ -21,8 +23,13 @@ This professional Streamlit dashboard provides comprehensive e-commerce analytic
 ├── EDA_Refactored.ipynb          # Original analysis notebook
 ├── data_loader.py                # Data loading and processing functions
 ├── business_metrics.py           # Business metric calculation functions
+├── simple_logger.py              # Logging system configuration
 ├── requirements.txt              # Python dependencies
 ├── README.md                     # This documentation
+├── LOGGING_SETUP.md             # Logging system documentation
+├── logs/                        # Log files directory (auto-created)
+│   ├── dashboard.log            # Application logs
+│   └── errors.log              # Error-only logs
 └── ecommerce_data/               # Data directory
     ├── orders_dataset.csv
     ├── order_items_dataset.csv
@@ -56,10 +63,12 @@ http://localhost:8501
 
 ### 4. Use Interactive Features
 
-- **Year Filter**: Select different years using the dropdown in the header
-- **KPI Cards**: View key metrics with trend indicators
-- **Interactive Charts**: Hover over charts for detailed information
-- **Responsive Design**: Access from desktop or mobile devices
+- **Theme Toggle**: Click the ☀️/🌙 button to switch between light and dark modes
+- **Year Filter**: Select different years (defaults to 2023)
+- **Month Filter**: Filter by specific months or view all data
+- **KPI Cards**: View key metrics with trend indicators and glass effects
+- **Interactive Charts**: Hover over charts for detailed information with glass styling
+- **Responsive Design**: Liquid glass theme adapts to desktop, tablet, and mobile devices
 
 ## Data Requirements
 
@@ -76,8 +85,10 @@ The framework expects five CSV files in the specified data directory:
 ## Dashboard Layout
 
 ### Header Section
-- **Title**: E-commerce Analytics Dashboard
-- **Date Filter**: Year selection dropdown (applies globally to all metrics)
+- **Title**: E-commerce Analytics Dashboard with gradient text effect
+- **Theme Toggle**: Day/Night mode switcher (☀️/🌙)
+- **Year Filter**: Year selection dropdown (defaults to 2023)
+- **Month Filter**: Month selection dropdown ("All" or specific months)
 
 ### KPI Row (5 Cards)
 - **Total Revenue**: Current period revenue with YoY growth indicator
@@ -263,22 +274,43 @@ streamlit run dashboard.py --logger.level debug
 - Enable JavaScript in browser
 - Clear browser cache if issues persist
 
+### Logging and Debugging
+
+The dashboard includes comprehensive logging system:
+- **Real-time Console Logs**: Colorized output for immediate debugging
+- **File Logging**: Detailed logs saved to `logs/dashboard.log`
+- **Error Tracking**: Separate error logs in `logs/errors.log`
+- **Automatic Rotation**: Daily log rotation with compression
+
+#### Using the Logging System
+```bash
+# View live logs while running dashboard
+tail -f logs/dashboard.log
+
+# Check error logs for issues
+tail -f logs/errors.log
+```
+
+For detailed logging documentation, see [LOGGING_SETUP.md](LOGGING_SETUP.md)
+
 ### Error Handling
 
 The dashboard includes built-in error handling:
-- Graceful fallbacks for missing data
+- Graceful fallbacks for missing data  
 - User-friendly error messages
 - Automatic data validation
 - Caching for improved performance
+- Comprehensive logging for debugging
 
 ## Future Enhancements
 
 ### Dashboard Features
-- **Multi-year Comparisons**: Support for comparing multiple years simultaneously
-- **Advanced Filters**: Category, state, and date range filters
-- **Export Functionality**: PDF reports and CSV data exports
+- **Enhanced Glassmorphism**: More dynamic blur effects and liquid animations
+- **Theme Customization**: User-defined color schemes and glass opacity settings
+- **Advanced Filters**: Category, state, and custom date range filters
+- **Export Functionality**: PDF reports and CSV data exports with glass-themed layouts
 - **Real-time Updates**: Auto-refresh with live data connections
-- **Custom Metrics**: User-defined KPI creation interface
+- **Custom Metrics**: User-defined KPI creation interface with glass styling
 
 ### Visualization Improvements
 - **Drill-down Capability**: Click-through from summary to detailed views
@@ -332,6 +364,24 @@ For questions or issues with the dashboard:
 4. Check browser console for JavaScript errors
 
 ## Version History
+
+- **v3.1**: Comprehensive Logging System & Bug Fixes
+  - 🔍 Comprehensive Loguru-based logging system
+  - 📝 Real-time console and file logging
+  - 🐛 Fixed Plotly compatibility issues (titlefont → title structure)
+  - 📊 Enhanced error tracking and debugging capabilities
+  - 🔧 Automatic log rotation and retention management
+  - 📋 Detailed logging documentation
+
+- **v3.0**: Liquid Glass Theme & Enhanced UX
+  - 🌟 Liquid glass theme with glassmorphism effects
+  - 🌙 Day/night mode toggle with smooth transitions
+  - 📅 Month filter alongside year selection (defaults to 2023)
+  - 🎨 Backdrop blur effects and transparent glass styling
+  - 📱 Enhanced responsive design for all devices
+  - ⚡ Smooth animations and hover effects
+  - 🎯 Modern Inter font integration
+  - 🌈 Dynamic gradient backgrounds
 
 - **v2.0**: Streamlit Dashboard Implementation
   - Interactive web interface with Streamlit
