@@ -1,4 +1,8 @@
-# E-commerce Business Analytics Requirements
+# E-commerce Business Analytics Dashboard Requirements
+
+# Streamlit framework
+streamlit>=1.29.0
+
 # Core data analysis libraries
 pandas>=1.5.0
 numpy>=1.21.0
