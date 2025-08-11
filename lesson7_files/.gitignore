@@ -1,0 +1,17 @@
+# Python 
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python/
+env/
+venv/
+lib/
+lib64/
+bin/
+share/
+include/
+*.egg-info/
+.installed.cfg
+*.ipynb_checkpoints/
+.ipynb_checkcache/
