@@ -367,8 +367,23 @@ def calculate_customer_experience_metrics(sales_df: pd.DataFrame,
     """
     metrics = {}
     
-    # Merge with reviews
-    experience_df = sales_df.merge(reviews_df[['order_id', 'review_score']], on='order_id', how='left')
+    # Check if review_score already exists in sales_df
+    if 'review_score' in sales_df.columns:
+        print("Review score already exists in sales data, using existing data")
+        experience_df = sales_df.copy()
+    else:
+        # Merge with reviews
+        experience_df = sales_df.merge(reviews_df[['order_id', 'review_score']], on='order_id', how='left')
+    
+    # Handle duplicate review_score columns from merge (if any)
+    if 'review_score_x' in experience_df.columns and 'review_score_y' in experience_df.columns:
+        # Use the column with more data, or fallback to _x
+        if experience_df['review_score_y'].notna().sum() > experience_df['review_score_x'].notna().sum():
+            experience_df['review_score'] = experience_df['review_score_y']
+        else:
+            experience_df['review_score'] = experience_df['review_score_x']
+        # Drop duplicate columns
+        experience_df = experience_df.drop(['review_score_x', 'review_score_y'], axis=1, errors='ignore')
     
     # Deduplicate by order for delivery metrics
     order_level_df = experience_df.drop_duplicates(subset=['order_id'])
