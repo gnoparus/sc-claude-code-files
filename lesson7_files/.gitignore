@@ -1,0 +1,26 @@
+# Python 
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python/
+env/
+venv/
+.venv/
+lib/
+lib64/
+bin/
+share/
+include/
+*.egg-info/
+.installed.cfg
+*.ipynb_checkpoints/
+.ipynb_checkcache/
+
+# Logs
+logs/
+*.log
+
+# Temporary files
+test_*.py
+temp_*
